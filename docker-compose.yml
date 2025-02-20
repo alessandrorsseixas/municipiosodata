@@ -1,0 +1,101 @@
+services:
+  webapplication1:
+    image: ${DOCKER_REGISTRY-}webapplication1
+    build:
+      context: .
+      dockerfile: WebApplication1/Dockerfile
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "5988:80"
+    volumes:
+      - ./WebApplication1/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - webapplication1
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
+
+  jupyter:
+    image: jupyter/base-notebook:latest
+    container_name: jupyter_notebook
+    ports:
+      - "8888:8888"
+    networks:
+      - app-network
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - jupyter_data:/home/jovyan/.jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: start-notebook.sh --NotebookApp.token='39de6643bd315050f128f04ba158545bea6df48953bbb965e7e4e10eefd240fe' --NotebookApp.password='123456'
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    networks:
+      - app-network
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=123456
+    ports:
+      - "9000:9000"
+    depends_on:
+      - mongo
+      - redis
+      - rabbitmq
+      - jupyter
+
+volumes:
+  mongo_data: {}
+  redis_data: {}
+  portainer_data: {}
+  rabbitmq_data: {}
+  jupyter_data: {}
+
+networks:
+  app-network:
+    driver: bridge
