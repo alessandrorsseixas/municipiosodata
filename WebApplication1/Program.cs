@@ -12,8 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 var modelBuilder = new ODataConventionModelBuilder();
 modelBuilder.EntitySet<MunicipioDto>("Municipios").EntityType.HasKey(m => m.Id);
 
-
-
 builder.Services.AddScoped<IMunicipioRepository, MunicipioRepository>();
 builder.Services.AddScoped<IMunicipioService, MunicipioService>();
 builder.Services.AddSingleton<MongoDbContext>();
@@ -37,7 +35,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Remova ou comente a linha abaixo para desabilitar o redirecionamento de HTTPS
+// app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

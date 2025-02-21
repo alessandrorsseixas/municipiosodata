@@ -54,6 +54,39 @@ Editar
 dotnet run
 The application will start on http://localhost:5000.
 
+Baixe o Openssl
+bash
+winget install openssl
+
+Crie pasta para o certificado
+bash
+mkdir "crieumapastaparaocertificado"
+
+Instalar o Chocolatey(Administrador) powershell:
+bash
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+Instalar o OpenSSL usando Chocolatey:
+bash
+choco install openssl
+
+Criar Certificado
+bash
+openssl req -x509 -newkey rsa:4096 -keyout nginx.key -out nginx.crt -days 365
+
+NoPass
+bash
+openssl rsa -in nginx.key -out nginx.key.nopass
+
+bash
+dotnet dev-certs https --clean
+
+bash 
+dotnet dev-certs https -ep "pastaparacertificado"\aspnetapp.pfx -p "crieumasenhaparaocertificado"
+
+bash
+dotnet dev-certs https --trust
+
 Using the API
 Once the application is running, you can test the endpoints using Postman or any HTTP client.
 

@@ -1,6 +1,5 @@
 services:
   webapplication1:
-    container_name: "WebApplication1_1"
     build:
       args:
         LAUNCHING_FROM_VS: true

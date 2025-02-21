@@ -1,0 +1,264 @@
+name: dockercompose1996124831718098516
+services:
+  jupyter:
+    command:
+      - start-notebook.sh
+      - --NotebookApp.token=39de6643bd315050f128f04ba158545bea6df48953bbb965e7e4e10eefd240fe
+      - --NotebookApp.password=123456
+    container_name: jupyter_notebook
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    image: jupyter/base-notebook:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 8888
+        published: "8888"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: C:\alessandro\_dev\estudos\municipiosodata\notebooks
+        target: /home/jovyan/work
+        bind:
+          create_host_path: true
+      - type: volume
+        source: jupyter_data
+        target: /home/jovyan/.jupyter
+        volume: {}
+  mongo:
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+      MONGO_INITDB_ROOT_USERNAME: root
+    image: mongo
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 27017
+        published: "27017"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: mongo_data
+        target: /data/db
+        volume: {}
+  nginx:
+    container_name: nginx
+    depends_on:
+      webapplication1:
+        condition: service_started
+        required: true
+    image: nginx:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "5988"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /mnt/c/alessandro/_dev/estudos/municipiosodata/WebApplication1/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+        bind:
+          create_host_path: true
+  portainer:
+    container_name: portainer
+    depends_on:
+      jupyter:
+        condition: service_started
+        required: true
+      mongo:
+        condition: service_started
+        required: true
+      rabbitmq:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      ADMIN_PASSWORD: "123456"
+      ADMIN_USERNAME: admin
+    image: portainer/portainer-ce:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 9000
+        published: "9000"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: portainer_data
+        target: /data
+        volume: {}
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: true
+  rabbitmq:
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: guest
+    image: rabbitmq:3-management
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 5672
+        published: "5672"
+        protocol: tcp
+      - mode: ingress
+        target: 15672
+        published: "15672"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: rabbitmq_data
+        target: /var/lib/rabbitmq
+        volume: {}
+  redis:
+    container_name: redis
+    image: redis:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+  webapplication1:
+    build:
+      context: C:\alessandro\_dev\estudos\municipiosodata\mnt\c\alessandro\_dev\estudos\municipiosodata\WebApplication1
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
+        LAUNCHING_FROM_VS: "true"
+      labels:
+        com.microsoft.created-by: visual-studio
+        com.microsoft.visual-studio.project-name: WebApplication1
+      target: base
+    container_name: WebApplication1_1
+    entrypoint:
+      - dotnet
+      - --roll-forward
+      - Major
+      - /VSTools/DistrolessHelper/DistrolessHelper.dll
+      - --wait
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ASPNETCORE_HTTPS_PORTS: "8081"
+      ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS: "true"
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      NUGET_FALLBACK_PACKAGES: /.nuget/fallbackpackages
+    image: webapplication1:dev
+    labels:
+      com.microsoft.visualstudio.debuggee.arguments: ' --additionalProbingPath /.nuget/packages --additionalProbingPath /.nuget/fallbackpackages  "/app/bin/Debug/net8.0/WebApplication1.dll"'
+      com.microsoft.visualstudio.debuggee.killprogram: dotnet --roll-forward Major /VSTools/DistrolessHelper/DistrolessHelper.dll --stop dotnet
+      com.microsoft.visualstudio.debuggee.program: dotnet
+      com.microsoft.visualstudio.debuggee.workingdirectory: /app
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8080
+        protocol: tcp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    tty: true
+    volumes:
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming\Microsoft\UserSecrets
+        target: /home/app/.microsoft/usersecrets
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming\ASP.NET\Https
+        target: /home/app/.aspnet/https
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\alessandro\_dev\estudos\municipiosodata\WebApplication1
+        target: /app
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\alessandro\_dev\estudos\municipiosodata
+        target: /src
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\vsdbg\vs2017u5
+        target: /remote_debugger
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\.nuget\packages
+        target: /.nuget/packages
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages
+        target: /.nuget/fallbackpackages
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming\ASP.NET\Https
+        target: /root/.aspnet/https
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming\Microsoft\UserSecrets
+        target: /root/.microsoft/usersecrets
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Sdks\Microsoft.Docker.Sdk\tools\linux-x64\net8.0
+        target: /VSTools
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\HotReload
+        target: /HotReloadAgent
+        read_only: true
+        bind:
+          create_host_path: true
+networks:
+  app-network:
+    name: dockercompose1996124831718098516_app-network
+    driver: bridge
+  default:
+    name: dockercompose1996124831718098516_default
+volumes:
+  jupyter_data:
+    name: dockercompose1996124831718098516_jupyter_data
+  mongo_data:
+    name: dockercompose1996124831718098516_mongo_data
+  portainer_data:
+    name: dockercompose1996124831718098516_portainer_data
+  rabbitmq_data:
+    name: dockercompose1996124831718098516_rabbitmq_data
+  redis_data:
+    name: dockercompose1996124831718098516_redis_data

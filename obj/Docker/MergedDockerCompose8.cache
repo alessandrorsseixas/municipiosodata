@@ -1,0 +1,190 @@
+name: dockercompose1996124831718098516
+services:
+  jupyter:
+    command:
+      - start-notebook.sh
+      - --NotebookApp.token=39de6643bd315050f128f04ba158545bea6df48953bbb965e7e4e10eefd240fe
+      - --NotebookApp.password=123456
+    container_name: jupyter_notebook
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    image: jupyter/base-notebook:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 8888
+        published: "8888"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: C:\alessandro\_dev\estudos\municipiosodata\notebooks
+        target: /home/jovyan/work
+        bind:
+          create_host_path: true
+      - type: volume
+        source: jupyter_data
+        target: /home/jovyan/.jupyter
+        volume: {}
+  mongo:
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+      MONGO_INITDB_ROOT_USERNAME: root
+    image: mongo
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 27017
+        published: "27017"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: mongo_data
+        target: /data/db
+        volume: {}
+  nginx:
+    container_name: nginx
+    depends_on:
+      webapplication1:
+        condition: service_started
+        required: true
+    image: nginx:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "5988"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: C:\alessandro\_dev\estudos\municipiosodata\WebApplication1\nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+        bind:
+          create_host_path: true
+  portainer:
+    container_name: portainer
+    depends_on:
+      jupyter:
+        condition: service_started
+        required: true
+      mongo:
+        condition: service_started
+        required: true
+      rabbitmq:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    environment:
+      ADMIN_PASSWORD: "123456"
+      ADMIN_USERNAME: admin
+    image: portainer/portainer-ce:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 9000
+        published: "9000"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: portainer_data
+        target: /data
+        volume: {}
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: true
+  rabbitmq:
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: guest
+    image: rabbitmq:3-management
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 5672
+        published: "5672"
+        protocol: tcp
+      - mode: ingress
+        target: 15672
+        published: "15672"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: rabbitmq_data
+        target: /var/lib/rabbitmq
+        volume: {}
+  redis:
+    container_name: redis
+    image: redis:latest
+    networks:
+      app-network: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+  webapplication1:
+    build:
+      context: C:\alessandro\_dev\estudos\municipiosodata\WebApplication1
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ASPNETCORE_HTTPS_PORTS: "8081"
+    image: webapplication1
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8080
+        protocol: tcp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming/Microsoft/UserSecrets
+        target: /home/app/.microsoft/usersecrets
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: C:\Users\alessandro.seixas\AppData\Roaming/ASP.NET/Https
+        target: /home/app/.aspnet/https
+        read_only: true
+        bind:
+          create_host_path: true
+networks:
+  app-network:
+    name: dockercompose1996124831718098516_app-network
+    driver: bridge
+  default:
+    name: dockercompose1996124831718098516_default
+volumes:
+  jupyter_data:
+    name: dockercompose1996124831718098516_jupyter_data
+  mongo_data:
+    name: dockercompose1996124831718098516_mongo_data
+  portainer_data:
+    name: dockercompose1996124831718098516_portainer_data
+  rabbitmq_data:
+    name: dockercompose1996124831718098516_rabbitmq_data
+  redis_data:
+    name: dockercompose1996124831718098516_redis_data
